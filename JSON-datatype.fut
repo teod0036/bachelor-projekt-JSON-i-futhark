@@ -28,7 +28,7 @@ def byte_array_to_bool [n] (xs:[n]u8) : bool =
 
 def read_num (s:[]u8) (x:node) : i64 =
     match x
-    case (#terminal _ (a, b)) -> byte_array_to_num (s[a:b] :> [b-a]u8)
+    case (#terminal _ (a, b)) -> byte_array_to_num s[a:b]
     case _ -> 0
 
 def read_json (js:option ([](i64, node))) : option ([]JSON) =
