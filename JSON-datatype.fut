@@ -17,17 +17,10 @@ def testcst : option ([](i64, node)) =
 
 def testjson : []u8 = "[1, 2, 3, false, true]"
 
--- def byte_array_to_num (a:i64, b:i64) (s:[]u8) : i64 =
---    let num = s[a:b] in
---    let digits = map (\x -> i64.u8 (x - 48)) num in
---    let tens = map2 (**) (replicate (b-a) 10) (reverse (iota (b-a))) in
---    let tuple_mul (a:i64, b:i64) : i64 = a * b in 
---        reduce (+) 0 (map tuple_mul (zip digits tens))
-
 def s_to_num  (a:i64, b:i64) (s:[]u8) =
-    let xs = s[a:b:-1] in
+    let xs = reverse s[a:b] in
     loop acc = 0 for i < (b-a) do
-        acc + (i64.u8 xs[i] - 48) * 10**i
+        acc * 10 + (i64.u8 xs[(b-a) - 1 - i] - '0')
 
 def read_val (s:[]u8) (x:node) : JSON =
     match x
@@ -37,18 +30,23 @@ def read_val (s:[]u8) (x:node) : JSON =
     case _ -> #null
 
 def read_json (s:[]u8) (js:option ([](i64, node))) : option ([]JSON) =
+    let s = filter (\x -> x != 32) s in
     match js
     case #some json -> 
         let extract_val (x:(i64, node)) : JSON = 
             match x
             case (_, x) -> read_val s x in 
-        let is_not_null (y:JSON) : bool = 
-            match y
-            case #null -> false
-            case _ -> true in
-        #some (filter is_not_null (map extract_val json))
+        #some (map extract_val json)
     case #none -> #none
 
 
-def main : bool =
-    true
+def main : []JSON =
+    let j = read_json testjson testcst in
+    match j 
+    case #some json -> 
+            let is_not_null (y:JSON) : bool = 
+            match y
+            case #null -> false
+            case _ -> true in
+            filter is_not_null json
+    case #none -> []
