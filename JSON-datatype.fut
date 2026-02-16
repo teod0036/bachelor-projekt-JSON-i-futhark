@@ -17,26 +17,38 @@ def testcst : option ([](i64, node)) =
 
 def testjson : []u8 = "[1, 2, 3, false, true]"
 
-def byte_array_to_num [n] (xs:[n]u8) : i64 =
-    let digits = map (\x -> i64.u8 (x - 48)) xs
-    let tens = map2 (**) (replicate n 10) (reverse (iota n)) in
-    let tuple_mul (a:i64, b:i64) : i64 = a * b in 
-        reduce (+) 0 (map tuple_mul (zip digits tens))
+-- def byte_array_to_num (a:i64, b:i64) (s:[]u8) : i64 =
+--    let num = s[a:b] in
+--    let digits = map (\x -> i64.u8 (x - 48)) num in
+--    let tens = map2 (**) (replicate (b-a) 10) (reverse (iota (b-a))) in
+--    let tuple_mul (a:i64, b:i64) : i64 = a * b in 
+--        reduce (+) 0 (map tuple_mul (zip digits tens))
 
-def byte_array_to_bool [n] (xs:[n]u8) : bool =
-    n == 4 && and (map2 (==) (xs :> [4]u8) "true")
+def s_to_num  (a:i64, b:i64) (s:[]u8) =
+    let xs = s[a:b:-1] in
+    loop acc = 0 for i < (b-a) do
+        acc + (i64.u8 xs[i] - 48) * 10**i
 
-def read_num (s:[]u8) (x:node) : i64 =
+def read_val (s:[]u8) (x:node) : JSON =
     match x
-    case (#terminal _ (a, b)) -> byte_array_to_num s[a:b]
-    case _ -> 0
+    case (#terminal #number (a, b)) -> #num (s_to_num (a,b) s)
+    case (#production #True) -> #bool true
+    case (#production #False) -> #bool false
+    case _ -> #null
 
-def read_json (js:option ([](i64, node))) : option ([]JSON) =
+def read_json (s:[]u8) (js:option ([](i64, node))) : option ([]JSON) =
     match js
-    case #some _ -> #some []
+    case #some json -> 
+        let extract_val (x:(i64, node)) : JSON = 
+            match x
+            case (_, x) -> read_val s x in 
+        let is_not_null (y:JSON) : bool = 
+            match y
+            case #null -> false
+            case _ -> true in
+        #some (filter is_not_null (map extract_val json))
     case #none -> #none
 
 
 def main : bool =
-    let abc : []u8  = "abc" in
-    byte_array_to_bool abc
+    true
