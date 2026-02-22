@@ -1,0 +1,3 @@
+require {
+  github.com/diku-dk/containers 0.10.0 #d4dfa326b2af1702b12486b5d60f9b3b1320881f
+}
