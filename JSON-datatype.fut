@@ -1,3 +1,4 @@
+import "lib/github.com/diku-dk/sorts/radix_sort"
 import "json"
 
 type production = parser.production
@@ -41,7 +42,12 @@ def cst_by_depth (ns:[](i64, node)) : [](i64, (i64, (i64, node))) =
         case ((depth, (_, _)), (_, (parent, nde))) -> 
                 (depth, (parent, nde)) 
     in
-    let depths = scan track_depth (0, (0, #production (#Null))) (zip (indices ns) ns) in
+    --let depths = scan track_depth (0, (0, #production (#Null))) (zip (indices ns) ns) in
+    let depths = 
+        loop (acc:((i64, (i64, node)), [](i64, (i64, node)))) = ((0, (0, #production (#Null))), []) for x in (zip (indices ns) ns) do
+            let temp = track_depth acc.0 x in 
+            (temp, concat acc.1 [temp])
+    in
     --let isolate (dn:(i64, (i64, node))) : (i64, i64) = (dn.1.0, dn.0) in
     --let d = map isolate depths in
     let consolidate_parents (prev:(i64, (i64, (i64, node)))) (cur:(i64, (i64, (i64, node)))) : (i64, (i64, (i64, node))) =
@@ -50,8 +56,16 @@ def cst_by_depth (ns:[](i64, node)) : [](i64, (i64, (i64, node))) =
         --(index, (depth, (parent, node)))
         if cur.1.0 == prev.1.0
         then (cur.0, (cur.1.0, (prev.1.1.0, cur.1.1.1))) 
-        else (cur.0, (cur.1.0, (cur.1.1.0, cur.1.1.1))) in  
-        scan consolidate_parents (0, (0, (0, #production (#Null)))) (zip (indices depths) depths)
+        else (cur.0, (cur.1.0, (cur.1.1.0, cur.1.1.1))) 
+    in
+    --scan consolidate_parents (0, (0, (0, #production (#Null)))) (zip (indices depths.1) depths.1)
+    let consolidated = 
+        loop (acc:((i64, (i64, (i64, node))), [](i64, (i64, (i64, node))))) = ((0, (0, (0, #production (#Null)))), []) for x in (zip (indices depths.1) depths.1) do
+            let temp = consolidate_parents acc.0 x in
+            (temp, concat acc.1 [temp])
+    in
+    let get_key (n:(i64, (i64, (i64, node)))) = n.1.0 in
+    radix_sort_by_key get_key i64.num_bits i64.get_bit consolidated.1
 
         
     
