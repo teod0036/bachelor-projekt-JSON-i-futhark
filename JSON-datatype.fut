@@ -10,7 +10,7 @@ type option 'a = #none | #some a
 type JSON = #null | #num i64 | #bool bool | #string i64 | #list (i64, i64) | #obj (i64, i64) (i64, i64)
 
 --def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": 2}]"
-def testjson : []u8 = "[{\"foo\": 1, \"bar\": {\"baz\": true}},{\"qux\": [3, 4, 5]}]"
+def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
 
 --testjson cst
 --#some [(0, #production (#Array)), (0, #production (#Array)), (1, #terminal (#literal_4) (0, 1)), 
@@ -84,22 +84,6 @@ def s_to_num  (a:i64, b:i64) (s:[]u8) =
 
 
 def sorted_cst_to_JSON (source:[]u8) (ns:[](i64, (i64, (i64, node)))) : ([]JSON, [](i64, i64)) =
-    let i_str_keys : [](bool, (i64, (i64, i64))) =
-        let match_spans (nde:(i64, (i64, (i64, node)))) : bool =
-            match nde.1.1.1
-            case (#terminal #string _) -> true
-            case _ -> false
-        in
-        let construct_intermediate_key (n:(i64, (i64, (i64, node)))) : (bool, (i64, (i64, i64))) =
-            match n.1.1
-            case (p, #terminal #string (a, b)) ->
-                if b >= length source then (false, (p, (a, b)))
-                else if source[b] == 58 then (true, (p, (a, b)))
-                else (false, (p, (a, b)))
-            case _ -> (false, (-1, (-1, -1)))
-        in
-        map construct_intermediate_key (filter match_spans ns)
-    in
     let match_relevant (n:(i64, (i64, (i64, node)))) : bool =
         --relevant: string, number, literal 4, literal 6, literal 7, literal 8, literal 9
         match n
@@ -115,6 +99,24 @@ def sorted_cst_to_JSON (source:[]u8) (ns:[](i64, (i64, (i64, node)))) : ([]JSON,
         case (_, (_, (_, #terminal #literal_8 _))) -> true
         case (_, (_, (_, #terminal #literal_9 _))) -> true
         case _ -> false
+    in
+    let final_intermediate_value = filter match_relevant ns in
+    --signature: (pre-sort index, (depth, (parent as pre-sort index, node)))
+    let i_str_keys : [](bool, (i64, (i64, i64))) =
+        let match_spans (nde:(i64, (i64, (i64, node)))) : bool =
+            match nde.1.1.1
+            case (#terminal #string _) -> true
+            case _ -> false
+        in
+        let construct_intermediate_key (n:(i64, (i64, (i64, node)))) : (bool, (i64, (i64, i64))) =
+            match n.1.1
+            case (p, #terminal #string (a, b)) ->
+                if b >= length source then (false, (p, (a, b)))
+                else if source[b] == 58 then (true, (p, (a, b)))
+                else (false, (p, (a, b)))
+            case _ -> (false, (-1, (-1, -1)))
+        in
+        map construct_intermediate_key (filter match_spans ns)
     in
     let find_str_key (sp:(i64, i64)) : i64 =
         let is_str_key (x:i64) (ik_idx:i64) : i64 =
@@ -132,8 +134,6 @@ def sorted_cst_to_JSON (source:[]u8) (ns:[](i64, (i64, (i64, node)))) : ([]JSON,
         if temp.1 == (-1) then (-1, -1)
         else (temp.0, temp.1 + 1)
     in
-    let final_intermediate_value = filter match_relevant ns in
-    --signature: (pre-sort index, (depth, (parent as pre-sort index, node)))
     let find_children (parent:i64) : (i64, i64) =
         let obj_child_span (x:(i64, i64)) (ik_idxs:(i64, i64)) : (i64, i64) =
             if final_intermediate_value[ik_idxs.0].1.1.0 == parent then
