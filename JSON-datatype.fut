@@ -9,8 +9,8 @@ type option 'a = #none | #some a
 
 type JSON = #null | #num i64 | #bool bool | #string i64 | #list (i64, i64) | #obj (i64, i64) (i64, i64)
 
---def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": 2}]"
-def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
+def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": 2}]"
+--def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
 
 --testjson cst
 --#some [(0, #production (#Array)), (0, #production (#Array)), (1, #terminal (#literal_4) (0, 1)),
@@ -101,6 +101,7 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
   --signature: (pre-sort index, (depth, (parent as pre-sort index, node)))
   
   let i_str_keys: [](bool, (i64, (i64, i64))) =
+  --signature: (iskey, (parent, (span, span)))
     let match_spans (nde: (i64, (i64, (i64, node)))): bool =
       match nde.1.1.1
       case (#terminal #string _) -> true
@@ -117,28 +118,52 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
     in map construct_intermediate_key (filter match_spans ns)
 
   let find_str_key (sp: (i64, i64)): i64 =
-    let is_str_key (x: i64) (ik_idx: i64): i64 = if i_str_keys[ik_idx].1.1 == sp then ik_idx else x
-    in reduce is_str_key (-1) (indices i_str_keys)
+    let is_str_key (ik_idx: i64) : bool = i_str_keys[ik_idx].1.1 == sp
+    let op (x, i) (y, j) =
+      if x && y then if i < j
+                   then (x, i)
+                   else (y, j)
+      else if y then (y, j)
+      else (x, i)
+    in (reduce_comm op (false, -1) (zip (map is_str_key (indices i_str_keys)) (indices i_str_keys))).1
 
   let find_obj_keys (parent: i64): (i64, i64) =
-    let obj_key_span (x: (i64, i64)) (ik_idxs: (i64, i64)): (i64, i64) =
-      if i_str_keys[ik_idxs.0].0 && i_str_keys[ik_idxs.0].1.0 == parent
-      then (i64.min x.0 ik_idxs.0, i64.max x.1 ik_idxs.1)
-      else x
-    let temp = reduce obj_key_span (i64.highest, -1) (zip (indices i_str_keys) (indices i_str_keys))
+    let is_obj_key (x:i64) : bool = i_str_keys[x].0 && i_str_keys[x].1.0 == parent
+    let op (x, (i1, i2)) (y, (j1, j2)) =
+      if x && y 
+      then 
+        (x, (i64.min i1 j1, i64.max i2 j2))
+      else 
+        if y 
+        then (y, (j1, j2))
+        else (x, (i1, i2))
+    let temp = (reduce_comm op (false, (i64.highest, -1)) (zip (map is_obj_key (indices i_str_keys)) (zip (indices i_str_keys) (indices i_str_keys)))).1
     in if temp.1 == (-1)
        then (-1, -1)
        else (temp.0, temp.1 + 1)
 
   let find_children (parent: i64): (i64, i64) =
-    let obj_child_span (x: (i64, i64)) (ik_idxs: (i64, i64)): (i64, i64) =
-      if final_intermediate_value[ik_idxs.0].1.1.0 == parent
-      then (i64.min x.0 ik_idxs.0, i64.max x.1 ik_idxs.1)
-      else x
-    let temp = reduce obj_child_span (i64.highest, -1) (zip (indices final_intermediate_value) (indices final_intermediate_value))
+    let is_child (x:i64) : bool = final_intermediate_value[x].1.1.0 == parent
+    let op (x, (i1, i2)) (y, (j1, j2)) =
+      if x && y 
+      then 
+        (x, (i64.min i1 j1, i64.max i2 j2))
+      else 
+        if y 
+        then (y, (j1, j2))
+        else (x, (i1, i2))
+    let temp = (reduce_comm op (false, (i64.highest, -1)) (zip (map is_child (indices final_intermediate_value)) (zip (indices final_intermediate_value) (indices final_intermediate_value)))).1
     in if temp.1 == (-1)
        then (-1, -1)
        else (temp.0, temp.1 + 1)
+    --let obj_child_span (x: (i64, i64)) (ik_idxs: (i64, i64)): (i64, i64) =
+    --  if final_intermediate_value[ik_idxs.0].1.1.0 == parent
+    --  then (i64.min x.0 ik_idxs.0, i64.max x.1 ik_idxs.1)
+    --  else x
+    --let temp = reduce obj_child_span (i64.highest, -1) (zip (indices final_intermediate_value) (indices final_intermediate_value))
+    --in if temp.1 == (-1)
+    --   then (-1, -1)
+    --   else (temp.0, temp.1 + 1)
 
   --signature: pre-sort index, depth, parent as pre-sort index, node
   let get_val (n: (i64, (i64, (i64, node)))): JSON =
