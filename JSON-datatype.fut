@@ -42,14 +42,11 @@ def cst_by_depth (ns: [](i64, node)) : [](i64, (i64, (i64, node))) =
       (depth - 1, (parent, nde))
     case ((depth, (_, _)), (_, (parent, nde))) ->
       (depth, (parent, nde))
-  --let depths = scan track_depth (0, (0, #production (#Null))) (zip (indices ns) ns) in
   let depths =
     loop (acc: (i64, (i64, node)), ns: [](i64, (i64, node))) = ((0, (0, #production (#Null))), [])
     for n in (zip (indices ns) ns) do
       let temp = track_depth acc n
       in (temp, concat ns [temp])
-  --let isolate (dn:(i64, (i64, node))) : (i64, i64) = (dn.1.0, dn.0) in
-  --let d = map isolate depths in
   let idepths = zip (indices depths.1) depths.1
   let find_parents (n: (i64, (i64, (i64, node)))): (i64, (i64, (i64, node))) =
     --(index, (depth, (parent, node)))
@@ -156,14 +153,6 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
     in if temp.1 == (-1)
        then (-1, -1)
        else (temp.0, temp.1 + 1)
-    --let obj_child_span (x: (i64, i64)) (ik_idxs: (i64, i64)): (i64, i64) =
-    --  if final_intermediate_value[ik_idxs.0].1.1.0 == parent
-    --  then (i64.min x.0 ik_idxs.0, i64.max x.1 ik_idxs.1)
-    --  else x
-    --let temp = reduce obj_child_span (i64.highest, -1) (zip (indices final_intermediate_value) (indices final_intermediate_value))
-    --in if temp.1 == (-1)
-    --   then (-1, -1)
-    --   else (temp.0, temp.1 + 1)
 
   --signature: pre-sort index, depth, parent as pre-sort index, node
   let get_val (n: (i64, (i64, (i64, node)))): JSON =
@@ -183,26 +172,6 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
     map get_val final_intermediate_value
   in (final_json, str_keys)
 
---def read_val (s:[]u8) (x:node) : JSON =
---    match x
---    case (#terminal #number (a, b)) -> #num (s_to_num (a,b) s)
---    case (#terminal #literal_6 _) -> #bool false
---    case (#terminal #literal_8 _) -> #bool true
---    case _ -> #null
-
---def read_json (s:[]u8) (js:option ([](i64, node))) : []JSON =
---    match js
---    case #some json ->
---        let extract_val (x:(i64, node)) : JSON =
---            match x
---            case (_, x) -> read_val s x
---        in  let is_not_null (y:JSON) : bool =
---                match y
---                case #null -> false
---                case _ -> true
---            in filter is_not_null (map extract_val json)
---    case #none -> []
-
 --def main : [](i64, (i64, (i64, node))) =
 --    let json = preprocess_cst (parse testjson) in
 --    if null json then [] else cst_by_depth json
@@ -210,3 +179,19 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
 def main : ([]JSON, [](i64, i64)) =
   let json = preprocess_cst (parse testjson)
   in if null json then ([], []) else sorted_cst_to_JSON testjson (cst_by_depth json)
+
+entry test_function (j:[]u8) : ([][5]i64, [][2]i64) = 
+  let data =
+    let json = preprocess_cst (parse j) in
+    if null json then ([], []) else sorted_cst_to_JSON testjson (cst_by_depth json)
+  let JSON_to_primitive (j_data:JSON) : [5]i64 =
+    match j_data
+    case #null -> [0, -1, -1, -1, -1]
+    case #num x -> [1, x, -1, -1, -1]
+    case #bool true -> [2, 1, -1, -1, -1]
+    case #bool false -> [2, 0, -1, -1, -1]
+    case #string x -> [3, x, -1, -1, -1]
+    case #list (a, b) -> [4, -1, -1, a, b]
+    case #obj (a, b) (c, d) -> [5, a, b, c, d]
+  let keys_to_primitive (a:i64, b:i64) : [2]i64 = [a, b] in
+  (map JSON_to_primitive data.0, map keys_to_primitive data.1)
