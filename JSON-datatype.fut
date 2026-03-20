@@ -176,14 +176,28 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
 --    let json = preprocess_cst (parse testjson) in
 --    if null json then [] else cst_by_depth json
 
-def main : ([]JSON, [](i64, i64)) =
-  let json = preprocess_cst (parse testjson)
-  in if null json then ([], []) else sorted_cst_to_JSON testjson (cst_by_depth json)
+def main (s:[]u8) : ([]JSON, [](i64, i64)) =
+  let json = preprocess_cst (parse s)
+  in if null json then ([], []) else sorted_cst_to_JSON s (cst_by_depth json)
 
-entry test_function (j:[]u8) : ([][5]i64, [][2]i64) = 
-  let data =
-    let json = preprocess_cst (parse j) in
-    if null json then ([], []) else sorted_cst_to_JSON testjson (cst_by_depth json)
+-- test functionality of parser
+-- ==
+-- entry: test_fun
+-- input { "1" }
+-- output { [[1i64, 1i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
+-- input { "12" }
+-- output { [[1i64, 12i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
+-- input { "123456789" }
+-- output { [[1i64, 123456789i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
+-- input { "true" }
+-- output { [[2i64, 1i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
+-- input { "false" }
+-- output { [[2i64, 0i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
+-- input { "\"test\"" }
+-- output { [[3i64, 0i64, -1i64, -1i64, -1i64]] [[1i64, 5i64]] }
+
+entry test_fun (j:[]u8) : ([][5]i64, [][2]i64) = 
+  let data = main j
   let JSON_to_primitive (j_data:JSON) : [5]i64 =
     match j_data
     case #null -> [0, -1, -1, -1, -1]
