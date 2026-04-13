@@ -5,9 +5,9 @@ type production = parser.production
 type node = parser.node terminal production
 type option 'a = #none | #some a
 
-type JSON = #null | #num i64 | #bool bool | #string i64 | #list (i64, i64) | #obj (i64, i64) (i64, i64)
+type JSON = #null | #num i64 | #bool bool | #string (i64, i64) | #list (i64, i64) | #obj (i64, i64) (i64, i64)
 
-def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": 2}]"
+def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": \"test2\"}]"
 --def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
 
 --testjson cst
@@ -89,35 +89,26 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
   let final_intermediate_value = filter match_relevant ns
   --signature: (pre-sort index, (depth, (parent as pre-sort index, node)))
   
-  let i_str_keys: [](bool, (i64, (i64, i64))) =
-  --signature: (iskey, (parent, (span, span)))
+  let i_keys: [](i64, (i64, i64)) =
+  --signature: (parent, (span, span)))
     let match_spans (nde: (i64, (i64, (i64, node)))): bool =
-      match nde.1.1.1
-      case (#terminal #string _) -> true
+      match nde.1.1
+      case (_, #terminal #string (_, b)) -> 
+        if b < length source 
+        then 
+          if source[b] == ':'
+          then true
+          else false
+        else false
       case _ -> false
-    let construct_intermediate_key (n: (i64, (i64, (i64, node)))): (bool, (i64, (i64, i64))) =
+    let construct_intermediate_key (n: (i64, (i64, (i64, node)))): (i64, (i64, i64)) =
       match n.1.1
-      case (p, #terminal #string (a, b)) ->
-        if b >= length source
-        then (false, (p, (a, b)))
-        else if source[b] == 58
-        then (true, (p, (a, b)))
-        else (false, (p, (a, b)))
-      case _ -> (false, (-1, (-1, -1)))
+      case (p, #terminal #string (a, b)) -> (p, (a, b))
+      case _ -> (-1, (-1, -1))
     in map construct_intermediate_key (filter match_spans ns)
-
-  let find_str_key (sp: (i64, i64)): i64 =
-    let is_str_key (ik_idx: i64) : bool = i_str_keys[ik_idx].1.1 == sp
-    let op (x, i) (y, j) =
-      if x && y then if i < j
-                   then (x, i)
-                   else (y, j)
-      else if y then (y, j)
-      else (x, i)
-    in (reduce_comm op (false, -1) (zip (map is_str_key (indices i_str_keys)) (indices i_str_keys))).1
-
+  
   let find_obj_keys (parent: i64): (i64, i64) =
-    let is_obj_key (x:i64) : bool = i_str_keys[x].0 && i_str_keys[x].1.0 == parent
+    let is_obj_key (x:i64) : bool = i_keys[x].0 == parent
     let op (x, (i1, i2)) (y, (j1, j2)) =
       if x && y 
       then 
@@ -126,7 +117,7 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
         if y 
         then (y, (j1, j2))
         else (x, (i1, i2))
-    let temp = (reduce_comm op (false, (i64.highest, -1)) (zip (map is_obj_key (indices i_str_keys)) (zip (indices i_str_keys) (indices i_str_keys)))).1
+    let temp = (reduce_comm op (false, (i64.highest, -1)) (zip (map is_obj_key (indices i_keys)) (zip (indices i_keys) (indices i_keys)))).1
     in if temp.1 == (-1)
        then (-1, -1)
        else (temp.0, temp.1 + 1)
@@ -149,7 +140,7 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
   --signature: pre-sort index, depth, parent as pre-sort index, node
   let get_val (n: (i64, (i64, (i64, node)))): JSON =
     match n
-    case (_, (_, (_, #terminal #string (a, b)))) -> #string (find_str_key (a, b))
+    case (_, (_, (_, #terminal #string (a, b)))) -> #string (a+1, b-1)
     case (_, (_, (_, #terminal #number n))) -> #num (s_to_num n source)
     case (idx, (_, (_, #production #Array_production))) -> #list (find_children idx)
     case (_, (_, (_, #terminal #literal_6 _))) -> #bool false
@@ -157,12 +148,10 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
     case (_, (_, (_, #terminal #literal_8 _))) -> #bool true
     case (idx, (_, (_, #production #Object_production))) -> #obj (find_obj_keys idx) (find_children idx)
     case _ -> #null
-  let str_keys: [](i64, i64) =
-    let isolate_key (ik: (bool, (i64, (i64, i64)))): (i64, i64) = (ik.1.1.0 + 1, ik.1.1.1 - 1)
-    in map isolate_key i_str_keys
-  let final_json: []JSON =
-    map get_val final_intermediate_value
-  in (final_json, str_keys)
+  let isolate_key (ik: (i64, (i64, i64))): (i64, i64) = (ik.1.0 + 1, ik.1.1 - 1)
+  let keys: [](i64, i64) = map isolate_key i_keys
+  let final_json: []JSON = map get_val final_intermediate_value
+  in (final_json, keys)
 
 --def main : [](i64, (i64, (i64, node))) =
 --    let json = preprocess_cst (parse testjson) in
@@ -192,9 +181,9 @@ def main : [](i64, i64, i64, node) =
 -- input { "false" }
 -- output { [[2i64, 0i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
 -- input { "\"test\"" }
--- output { [[3i64, 0i64, -1i64, -1i64, -1i64]] [[1i64, 5i64]] }
+-- output { [[3i64, 1i64, 5i64, -1i64, -1i64]] empty([0][2]i64) }
 -- input { "\"\"" }
--- output { [[3i64, 0i64, -1i64, -1i64, -1i64]] [[1i64, 1i64]] }
+-- output { [[3i64, 1i64, 1i64, -1i64, -1i64]] empty([0][2]i64) }
 -- input { "null" }
 -- output { [[0i64, -1i64, -1i64, -1i64, -1i64]] empty([0][2]i64) }
 -- input { "[]" }
@@ -328,7 +317,7 @@ entry test_fun (j:[]u8) : ([][5]i64, [][2]i64) =
     case #num x -> [1, x, -1, -1, -1]
     case #bool true -> [2, 1, -1, -1, -1]
     case #bool false -> [2, 0, -1, -1, -1]
-    case #string x -> [3, x, -1, -1, -1]
+    case #string (a, b) -> [3, a, b, -1, -1]
     case #list (a, b) -> [4, -1, -1, a, b]
     case #obj (a, b) (c, d) -> [5, a, b, c, d]
   let keys_to_primitive (a:i64, b:i64) : [2]i64 = [a, b] in
