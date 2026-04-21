@@ -28,33 +28,12 @@ def preprocess_cst (js: option ([](i64, node))) : [](i64, node) =
   case #some json -> json
   case #none -> []
 
--- wyllie's algorithm implementation inspired by slide 24 of:
--- https://github.com/diku-dk/dpp-e2025-pub/blob/main/slides/L5-pointer-structures.pdf
--- And by lines 145-162 of:
--- https://github.com/diku-dk/vtree/blob/main/lib/github.com/diku-dk/vtree/vtree.fut
-def compress [n] (N: [n](i64, node)) :  [n](i64, node) =
-  let f i = if N[i].0 == 0 || N[i].1 == #production #Array || N[i].1 == #production #Object
-            then N[i]
-            else (N[N[i].0].0, N[N[i].0].1)
-  in tabulate n f
-
-def rank [n] (R: [n]i64) (N: [n](i64, node)) : ([n]i64, [n](i64, node)) =
-  let f i = if N[i].0 == 0
-            then (R[i], N[i])
-            else (R[i] + R[N[i].0], (N[N[i].0].0, N[N[i].0].1))
-  in unzip (tabulate n f)
-
-def wyllie [n] (N: [n](i64, node)) : ([n]i64, [n]i64) =
-  let R = replicate n 1 with [0] = 0
-  let N' = loop N for _i < 64 - i64.clz n do 
-                  compress N
-  let (P,_) = unzip N' 
-  let (R,_) = loop (R, N') for _i < 64 - i64.clz n do
-                  rank R N'
-  in (R, P)
-
 def cst_by_depth (ns: [](i64, node)) : [](i64, (i64, (i64, node))) =
   let (_,nodes) = unzip ns
+  -- wyllie's algorithm implementation inspired by slide 24 of:
+  -- https://github.com/diku-dk/dpp-e2025-pub/blob/main/slides/L5-pointer-structures.pdf
+  -- And by lines 145-162 of:
+  -- https://github.com/diku-dk/vtree/blob/main/lib/github.com/diku-dk/vtree/vtree.fut
   let compress [n] (N: [n](i64, node)) :  [n](i64, node) =
     let f i = if N[i].0 == 0 || N[i].1 == #production #Array || N[i].1 == #production #Object
               then N[i]
@@ -176,11 +155,8 @@ def parse_JSON (s:[]u8) : ([]JSON, [](i64, i64)) =
   let json = preprocess_cst (parse s)
   in if null json then ([], []) else sorted_cst_to_JSON s (cst_by_depth json)
 
-def main : [](i64, i64, i64, node) =
-  let json = preprocess_cst (parse testjson)
-  let (_,nodes) = unzip json 
-  let (D, P) = wyllie json
-  in zip4 (indices nodes) D P nodes
+def main =
+  parse_JSON testjson
 
 -- test functionality of parser
 -- ==
