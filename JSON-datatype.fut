@@ -7,7 +7,7 @@ type option 'a = #none | #some a
 
 type JSON = #null | #num i64 | #bool bool | #string (i64, i64) | #list (i64, i64) | #obj (i64, i64) (i64, i64)
 
-def testjson : []u8 = "[{\"foo\": \"test\"}, {\"bar\": \"test2\"}]"
+def testjson : []u8 = "[{\"foo\": 1}, {\"bar\": 2}]"
 --def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
 
 --testjson cst
@@ -54,7 +54,26 @@ def wyllie [n] (N: [n](i64, node)) : ([n]i64, [n]i64) =
   in (R, P)
 
 def cst_by_depth (ns: [](i64, node)) : [](i64, (i64, (i64, node))) =
-  let (_,nodes) = unzip ns 
+  let (_,nodes) = unzip ns
+  let compress [n] (N: [n](i64, node)) :  [n](i64, node) =
+    let f i = if N[i].0 == 0 || N[i].1 == #production #Array || N[i].1 == #production #Object
+              then N[i]
+              else (N[N[i].0].0, N[N[i].0].1)
+    in tabulate n f
+  let rank [n] (R: [n]i64) (N: [n](i64, node)) : ([n]i64, [n](i64, node)) =
+    let f i = if N[i].0 == 0
+              then (R[i], N[i])
+              else (R[i] + R[N[i].0], (N[N[i].0].0, N[N[i].0].1))
+    in unzip (tabulate n f)
+
+  let wyllie [n] (N: [n](i64, node)) : ([n]i64, [n]i64) =
+    let R = replicate n 1 with [0] = 0
+    let N' = loop N for _i < 64 - i64.clz n do 
+                    compress N
+    let (P,_) = unzip N' 
+    let (R,_) = loop (R, N') for _i < 64 - i64.clz n do
+                    rank R N'
+    in (R, P)
   let (Depths, Parents) = wyllie ns
   let parented_and_depthed = zip (indices nodes) (zip Depths (zip Parents nodes))
   let get_key (n: (i64, (i64, (i64, node)))) =
@@ -152,10 +171,6 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
   let keys: [](i64, i64) = map isolate_key i_keys
   let final_json: []JSON = map get_val final_intermediate_value
   in (final_json, keys)
-
---def main : [](i64, (i64, (i64, node))) =
---    let json = preprocess_cst (parse testjson) in
---    if null json then [] else cst_by_depth json
 
 def parse_JSON (s:[]u8) : ([]JSON, [](i64, i64)) =
   let json = preprocess_cst (parse s)
