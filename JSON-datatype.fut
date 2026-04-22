@@ -155,8 +155,8 @@ def parse_JSON (s:[]u8) : ([]JSON, [](i64, i64)) =
   let json = preprocess_cst (parse s)
   in if null json then ([], []) else sorted_cst_to_JSON s (cst_by_depth json)
 
-def main =
-  parse_JSON testjson
+def main j =
+  parse_JSON j
 
 -- test functionality of parser
 -- ==
