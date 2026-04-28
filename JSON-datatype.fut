@@ -62,10 +62,17 @@ def cst_by_depth (ns: [](i64, node)) : [](i64, (i64, (i64, node))) =
 
 -- converts a []u8 (string) to a number
 def s_to_num (a: i64, b: i64) (s: []u8) =
-  let xs = reverse s[a:b]
-  in loop acc = 0
-     for i < (b - a) do
-       acc * 10 + (i64.u8 xs[(b - a) - 1 - i] - '0')
+  if s[a] == '-' then
+    let xs = reverse s[a+1:b]
+    let temp = loop acc = 0
+                for i < (b - (a + 1)) do
+                  acc * 10 + (i64.u8 xs[(b - (a + 1)) - 1 - i] - '0')
+    in -1 * temp
+  else
+    let xs = reverse s[a:b]
+    in loop acc = 0
+      for i < (b - a) do
+        acc * 10 + (i64.u8 xs[(b - a) - 1 - i] - '0')
 
 def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSON, [](i64, i64)) =
   let match_relevant (n: (i64, (i64, (i64, node)))): bool =
