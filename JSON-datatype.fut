@@ -5,7 +5,14 @@ type production = parser.production
 type node = parser.node terminal production
 type option 'a = #none | #some a
 
-type JSON = #null | #num i64 | #bool bool | #string (i64, i64) | #list (i64, i64) | #obj (i64, i64) (i64, i64)
+type keys = (i64, i64)
+type str = (i64, i64)
+type members = (i64, i64)
+
+type JSON = #null | #num i64 | #bool bool | #string str | #list members | #obj keys members
+
+type root = i64
+type~ JSON_environment = (root, []JSON, []str, []u8)
 
 def testjson : []u8 = "[{\"foo\": 1}, {\"bar\": 2}]"
 --def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
@@ -158,9 +165,14 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
   let final_json: []JSON = map get_val final_intermediate_value
   in (final_json, keys)
 
-def parse_JSON (s:[]u8) : ([]JSON, [](i64, i64)) =
-  let json = preprocess_cst (parse s)
-  in if null json then ([], []) else sorted_cst_to_JSON s (cst_by_depth json)
+def parse_JSON (s:[]u8) : JSON_environment =
+  let json = preprocess_cst (parse s) in 
+    if null json 
+    then (-1, [], [], []) 
+    else 
+      let (JS, ks) = sorted_cst_to_JSON s (cst_by_depth json) in
+      (0, JS, ks, s)
+
 
 def main j =
   parse_JSON j
@@ -307,8 +319,9 @@ def main j =
 -- input { "{\"foo\": {\"baz\": 1}, \"bar\": {\"qux\": 2}}" }
 -- output { [[5i64, 0i64, 2i64, 1i64, 3i64], [5i64, 2i64, 3i64, 3i64, 4i64], [5i64, 3i64, 4i64, 4i64, 5i64], [1i64, 1i64, -1i64, -1i64, -1i64], [1i64, 2i64, -1i64, -1i64, -1i64]] [[2i64, 5i64], [21i64, 24i64], [10i64, 13i64], [29i64, 32i64]] }
 
-entry test_fun (j:[]u8) : ([][5]i64, [][2]i64) = 
-  let data = parse_JSON j
+entry test_fun (j:[]u8) : ([][5]i64, [][2]i64) =
+  let (_, JS, ks, _) = parse_JSON j
+  let data = (JS, ks)
   let JSON_to_primitive (j_data:JSON) : [5]i64 =
     match j_data
     case #null -> [0, -1, -1, -1, -1]
