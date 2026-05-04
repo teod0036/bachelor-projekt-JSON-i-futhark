@@ -1,0 +1,199 @@
+import "JSON-datatype"
+import "JSON-utils"
+
+--From https://futhark-lang.org/examples/array-equality.html
+def str_equal [n] [m] (a: [n]u8) (b: [m]u8) : bool =
+  n == m && (and (map2 (==) a (b :> [n]u8)))
+
+--The root needs to point to an object, otherwise an invalid environment is returned
+--If the object does not contain the key, a new environment containing only null is returned
+def get_by_key (JSE:JSON_environment) (key:[]u8) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+  then (-1, [], [], [])
+  else
+    match j[r]
+      case #obj (a, b) (c, _) ->
+        if a == -1 
+        then (0, [#null], [], [])
+        else
+          let relevant_keys = k[a:b]
+          let is_key (x1:i64, x2:i64): bool = str_equal key s[x1:x2]
+          let op (x, i) (y, j) =
+            if x && y
+            then if i < j
+                then (x, i)
+                else (y, j)
+            else if y
+            then (y, j)
+            else (x, i)
+          let offset = (reduce_comm op (false, -1) (zip (map is_key relevant_keys) (indices relevant_keys))) in
+          if offset.0
+          then (c + offset.1, j, k, s)
+          else (0, [#null], [], [])
+      case _ -> (-1, [], [], [])
+
+--Based on first example from https://jqlang.org/manual/#object-identifier-index
+--Expected output: "42" 
+def get_foo_example =
+  let input = "{\"foo\": 42, \"bar\": \"less interesting data\"}"
+  let foo = "foo" 
+  let JSE = parse_JSON input in
+  print_JSON (get_by_key JSE foo)
+
+--The root needs to point to a list otherwise an invalid environment is returned
+--If index is out of bounds, a new environment containing null is returned
+def get_by_index (JSE:JSON_environment) (idx:i64) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+  then (-1, [], [], [])
+  else
+    match j[r]
+    case #list (a, b) -> 
+      if idx < b
+      then (a+idx, j, k, s)
+      else (0, [#null], [], [])
+    case _ -> (-1, [], [], [])
+
+--Based on first example from https://jqlang.org/manual/#array-index
+--Expected output: "{\"name\":\"JSON\",\"good\":true}"
+def get_zero_example =
+  let input = "[{\"name\":\"JSON\", \"good\":true}, {\"name\":\"XML\", \"good\":false}]"
+  let index = 0
+  let JSE = parse_JSON input in
+  print_JSON (get_by_index JSE index)
+
+
+--The root needs to point to an object, otherwise an invalid environment is returned
+def get_keys (JSE:JSON_environment) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+  then (-1, [], [], [])
+  else
+    match j[r]
+    case #obj (a, b) (_, _) ->
+      if a == -1
+      then (0, [#list (-1, -1)], [], [])
+      else
+        let relevant_keys = k[a:b]
+        let str_to_JSON (x:str) : JSON = #string x
+        let JSON_strs : []JSON = concat [#list (1, b-a+1)] (map str_to_JSON relevant_keys) in
+        (0, JSON_strs, [], s) 
+    case _ -> (-1, [], [], [])
+
+--Based on first example from https://jqlang.org/manual/#keys-keys_unsorted, except the keys aren't sorted
+--Expected output: "[\"abc\",\"abcd\",\"Foo\"]"
+def get_keys_example =
+  let input = "{\"abc\": 1, \"abcd\": 2, \"Foo\": 3}"
+  let JSE = parse_JSON input in
+  print_JSON (get_keys JSE)
+
+
+--The root needs to point to an object or a list, otherwise an invalid environment is returned
+def map_has_key (JSE:JSON_environment) (key:[]u8) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+  then (-1, [], [], [])
+  else
+    let has_key (o:i64) : bool =
+      let temp = (get_by_key (o, j, k, s) key) in
+      temp.0 != -1 && temp.1[0] != #null
+    let bool_to_JSONbool (x:bool) = #bool x in
+    match j[r]
+      case #list (a, b) ->
+        if a == -1 
+        then (0, [#list (-1, -1)], [], []) 
+        else
+          let relevant_objects = a..<b  
+          let bool_arr = map has_key relevant_objects
+          let JSON_bools = concat [#list (1, b-a+1)] (map bool_to_JSONbool bool_arr) in
+          (0, JSON_bools, [], [])
+      case #obj (_, _) (a, b) ->
+        if a == -1 
+        then (0, [#list (-1, -1)], [], []) 
+        else
+          let relevant_objects = a..<b  
+          let bool_arr = map has_key relevant_objects
+          let JSON_bools = concat [#list (1, b-a+1)] (map bool_to_JSONbool bool_arr) in
+          (0, JSON_bools, [], [])
+      case _ -> (-1, [], [], [])
+
+--Based on first example from https://jqlang.org/manual/#has
+--Expected output: "[true,false]"
+def map_has_foo_example1 =
+  let input = "[{\"foo\": 42}, {}]"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  print_JSON (map_has_key JSE key)
+
+--Expected output: "[true,false]"
+def map_has_foo_example2 =
+  let input = "{\"bar\":{\"foo\": 42}, \"baz\":{}}"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  print_JSON (map_has_key JSE key)
+
+
+
+--The root needs to point to a list, otherwise an invalid environment is returned
+--The function returns an environment where the root is replaced with an array of roots
+--this is a way to represent a list of objects without rebuilding the environment
+def select_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([]i64, []JSON, []str, []u8) =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+    then ([-1], [], [], [])
+    else
+      match j[r]
+      case #list (a, b) ->
+        let relevant_objects = a..<b
+        let key_val_is_string (o:i64) : i64 =
+          let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
+          match j'[r']
+          case #string (a', b') ->
+            if b'-a' == length value
+            then
+              let key_val = s[a':b']
+              let temp = 
+                loop eq = true for i < length value do
+                  (key_val[i] == value[i]) && eq 
+              in
+              if temp 
+              then o
+              else -1
+            else -1
+          case _ -> -1
+        let is_bad (x:i64) = x != -1
+        let roots = filter is_bad (map key_val_is_string relevant_objects) in
+        (roots, j, k, s)
+      case _ -> ([-1], [], [], [])
+
+--Based on second example from https://jqlang.org/manual/#select
+--Expected output: "{\"id\":\"second\",\"val\":2}"
+def select_id_is_second =
+  let input = "[{\"id\": \"first\", \"val\": 1}, {\"id\": \"second\", \"val\": 2}]"
+  let key = "id"
+  let value = "second"
+  let JSE = parse_JSON input 
+  let (rs, j, k, s) = select_key_val_is_string JSE key value in
+  print_JSON (rs[0], j, k, s)
+
+--def by_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([]i64, []JSON, []str, []u8) =
+--  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+--  if r == -1 
+--    then ([-1], [], [], [])
+--    else
+--      match j[r]
+--      case #list (a, b) ->
+--        let relevant_objects = a..<b
+--        let key_val_is_string (o:i64) : i64 =
+--          let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
+--          match j'[r']
+--          case #string (a', b') ->
+--            if str_equal value s[a':b']
+--            then o
+--            else -1
+--          case _ -> -1
+--        let is_bad (x:i64) = x != -1
+--        let roots = filter is_bad (map key_val_is_string relevant_objects) in
+--        (roots, j, k, s)
+--      case _ -> ([-1], [], [], [])
