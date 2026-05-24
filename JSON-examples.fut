@@ -1,5 +1,6 @@
 import "JSON-datatype"
 import "JSON-utils"
+import "lib/github.com/diku-dk/sorts/radix_sort"
 
 --From https://futhark-lang.org/examples/array-equality.html
 def str_equal [n] [m] (a: [n]u8) (b: [m]u8) : bool =
@@ -150,16 +151,9 @@ def select_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([
           let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
           match j'[r']
           case #string (a', b') ->
-            if b'-a' == length value
-            then
-              let key_val = s[a':b']
-              let temp = 
-                loop eq = true for i < length value do
-                  (key_val[i] == value[i]) && eq 
-              in
-              if temp 
-              then o
-              else -1
+            let slice = s[a':b'] in
+            if str_equal value slice
+            then o
             else -1
           case _ -> -1
         let is_bad (x:i64) = x != -1
@@ -169,7 +163,7 @@ def select_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([
 
 --Based on second example from https://jqlang.org/manual/#select
 --Expected output: "{\"id\":\"second\",\"val\":2}"
-def select_id_is_second =
+def select_id_is_second_example =
   let input = "[{\"id\": \"first\", \"val\": 1}, {\"id\": \"second\", \"val\": 2}]"
   let key = "id"
   let value = "second"
@@ -177,23 +171,44 @@ def select_id_is_second =
   let (rs, j, k, s) = select_key_val_is_string JSE key value in
   print_JSON (rs[0], j, k, s)
 
---def by_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([]i64, []JSON, []str, []u8) =
---  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
---  if r == -1 
---    then ([-1], [], [], [])
---    else
---      match j[r]
---      case #list (a, b) ->
---        let relevant_objects = a..<b
---        let key_val_is_string (o:i64) : i64 =
---          let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
---          match j'[r']
---          case #string (a', b') ->
---            if str_equal value s[a':b']
---            then o
---            else -1
---          case _ -> -1
---        let is_bad (x:i64) = x != -1
---        let roots = filter is_bad (map key_val_is_string relevant_objects) in
---        (roots, j, k, s)
---      case _ -> ([-1], [], [], [])
+
+--The root needs to point to a list, otherwise an invalid environment is returned'
+--If there are elements within the list which either are not objects or 
+--do not contain the specified key, or the key does not map to a number,
+--they are put at the end unsorted 
+def sort_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+    then (-1, [], [], [])
+    else
+      match j[r] 
+      case #list (a, b) ->
+        let get_radix_key (x:i64) : i64 =
+          if x < a 
+          then 0
+          else 
+            if x >= b
+            then i64.highest
+            else 
+              let (value, j', _, _) = get_by_key (x, j, k, s) key in
+              if value == -1
+              then i64.highest
+              else 
+                match j'[value]
+                case #num n -> n
+                case _ -> i64.highest
+        let sorted_indices = radix_sort_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
+        let sorted_JSON = scatter (copy j) sorted_indices j in
+        (r, sorted_JSON, k, s)
+      case _ -> (-1, [], [], [])
+
+--Based on second example from https://jqlang.org/manual/v1.8/#sort-sort_by
+--Expected output: "[{\"foo\":2,\"bar\":1},{\"foo\":3,\"bar\":10},{\"foo\":4,\"bar\":10}]"
+def sort_by_foo_example =
+  let input = "[{\"foo\":4, \"bar\":10}, {\"foo\":3, \"bar\":10}, {\"foo\":2, \"bar\":1}]"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  print_JSON (sort_by_key_val JSE key)
+
+
+
