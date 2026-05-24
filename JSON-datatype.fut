@@ -14,7 +14,7 @@ type JSON = #null | #num i64 | #bool bool | #string str | #list members | #obj k
 type root = i64
 type~ JSON_environment = (root, []JSON, []str, []u8)
 
-def testjson : []u8 = "[{\"foo\": 1}, {\"bar\": 2}]"
+def testjson : []u8 = "[[1,2],[3,4],[5,6]]"
 --def testjson : []u8 = "[{\"a\": 1, \"ab\": {\"abc\": true}},{\"abcd\": [3, 4, 5]}]"
 
 --testjson cst
@@ -46,6 +46,7 @@ def cst_by_depth (ns: [](i64, node)) : [](i64, (i64, (i64, node))) =
               then N[i]
               else (N[N[i].0].0, N[N[i].0].1)
     in tabulate n f
+
   let rank [n] (R: [n]i64) (N: [n](i64, node)) : ([n]i64, [n](i64, node)) =
     let f i = if N[i].0 == 0
               then (R[i], N[i])
@@ -135,7 +136,7 @@ def sorted_cst_to_JSON (source: []u8) (ns: [](i64, (i64, (i64, node)))) : ([]JSO
        else (temp.0, temp.1 + 1)
 
   let find_children (parent: i64): (i64, i64) =
-    let is_child (x:i64) : bool = final_intermediate_value[x].1.1.0 == parent && parent != x
+    let is_child (x:i64) : bool = final_intermediate_value[x].1.1.0 == parent && parent != final_intermediate_value[x].0
     let op (x, (i1, i2)) (y, (j1, j2)) =
       if x && y 
       then 
