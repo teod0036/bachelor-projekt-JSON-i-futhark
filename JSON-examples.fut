@@ -212,3 +212,101 @@ def sort_by_foo_example =
 
 
 
+def unique_by_key_val (JSE:JSON_environment) (key:[]u8) : ([]i64, []JSON, []str, []u8) =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = sort_by_key_val JSE key in
+  if r == -1
+  then ([-1], [], [], [])
+  else 
+    match j[r]
+    case #list (a, b) ->
+      let relevant_objects = a..<b
+      let border (x:i64) : i64 =
+        if x == a
+        then x
+        else 
+          let (r1, val1, _, _) = get_by_key (x, j, k, s) key
+          let (r2, val2, _, _) = get_by_key (x-1, j, k, s) key in
+          if val1[r1] == val2[r2]
+          then -1
+          else x 
+      let unique_indices = filter (\i -> i != -1) (map border relevant_objects) in
+      (unique_indices, j, k, s)
+    case _ -> ([-1], [], [], [])
+
+--Based on example from https://jqlang.org/manual/v1.8/#unique-unique_by
+--Expected output: [1,3]
+def unique_by_foo_example =
+  let input = "[{\"foo\": 1, \"bar\": 2}, {\"foo\": 1, \"bar\": 3}, {\"foo\": 4, \"bar\": 5}]"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  let (rs, _, _, _) = (unique_by_key_val JSE key) in
+  rs
+
+
+--This functions behavior is undefined if keys of the specifed name are bound to values of #obj, #list, or #string
+def group_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in
+  if r == -1
+  then (-1, [], [], [])
+  else 
+    match j[r]
+    case #list (_, b) ->
+      let (border_indices, _, _, _) = unique_by_key_val JSE key
+      let to_group (idx:i64) : (i64,i64) =
+        if border_indices[idx] == last border_indices
+        then (border_indices[idx], b)
+        else (border_indices[idx], border_indices[idx+1])
+      let to_jlist (a':i64, b':i64) : JSON = #list (a', b')
+      let groups = map to_jlist (map to_group (indices border_indices))
+      let lenj = length j
+      let new_root_value = [#list ((lenj + 1), (lenj + 1 + (length groups)))]
+      let grouped_objs = concat new_root_value groups 
+      let combined_json = concat j grouped_objs in
+      (lenj, combined_json, k, s)
+    case _ -> (-1, [], [], [])
+
+--Based on example from https://jqlang.org/manual/v1.8/#group_by
+--Expected output: "[[{\"foo\":1,\"bar\":10},{\"foo\":1,\"bar\":1}],[{\"foo\":3,\"bar\":100}]]"
+def group_by_foo_example =
+  let input = "[{\"foo\":1, \"bar\":10}, {\"foo\":3, \"bar\":100}, {\"foo\":1, \"bar\":1}]"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  print_JSON (group_by_key_val JSE key)
+
+
+
+def max_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+    then (-1, [], [], [])
+    else
+      match j[r] 
+      case #list (a, b) ->
+        let max_obj_idx (x:i64) (y:i64) : i64 =
+          if x == -1 
+          then y
+          else 
+            if y == -1
+            then x
+            else
+              let (xr, _, _, _) = get_by_key (x, j, k, s) key
+              let (yr, _, _, _) = get_by_key (y, j, k, s) key in
+              match (j[xr], j[yr])
+              case (#num a, #num b) -> if a > b then x else y
+              case (#num _, _) -> x
+              case (_, #num _) -> y
+              case _ -> -1
+        let relevant_objects = a..<b
+        let max_obj_idx = reduce max_obj_idx (-1) (relevant_objects) in
+        if  max_obj_idx == -1 
+        then (-1, [], [], [])
+        else (max_obj_idx, j, k, s)   
+      case _ -> (-1, [], [], [])
+
+--Based on example from https://jqlang.org/manual/v1.8/#min-max-min_by-max_by
+--Expected output: "{\"foo\":2,\"bar\":3}"
+def max_by_foo_example =
+  let input = "[{\"foo\":1, \"bar\":14}, {\"foo\":2, \"bar\":3}]"
+  let key = "foo"
+  let JSE = parse_JSON input in
+  print_JSON (max_by_key_val JSE key)
