@@ -211,7 +211,7 @@ def sort_by_foo_example =
   print_JSON (sort_by_key_val JSE key)
 
 
-
+--This function transforms the JSON array in the JSE 
 def unique_by_key_val (JSE:JSON_environment) (key:[]u8) : ([]i64, []JSON, []str, []u8) =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = sort_by_key_val JSE key in
   if r == -1
@@ -310,3 +310,41 @@ def max_by_foo_example =
   let key = "foo"
   let JSE = parse_JSON input in
   print_JSON (max_by_key_val JSE key)
+
+
+--This function leaves a lot of unreachable values in the JSON array, essentially wasting a lot of memory
+--This function also messes up other parts of the JSON array that may not be related to the root of the JSON environment
+def sum_all_lists (JSE:JSON_environment) : JSON_environment =
+  let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
+  if r == -1 
+  then (-1, [], [], [])
+  else
+    let sum_list (idx:i64, x:JSON) : JSON =
+      if idx == r 
+      then x
+      else 
+        match j[idx]
+        case #list (a, b) ->
+          let relevant_values = j[a:b]
+          let to_num (x:JSON) : i64 =
+            match x
+            case #num n -> n
+            case _ -> 0
+          let list_sum = reduce (+) 0 (map to_num relevant_values) in
+          #num list_sum
+        case _ -> x 
+    in
+    let JSON_w_summed_lists = map sum_list (zip (indices j) j) in
+    (r, JSON_w_summed_lists, k, s)
+
+--Expected output: "[3,7,11]"
+def sum_all_lists_example1 =
+  let input = "[[1,2],[3,4],[5,6]]"
+  let JSE = parse_JSON input in
+  print_JSON (sum_all_lists JSE)
+
+--Expected output: "[3,{\"foo\":7},11]"
+def sum_all_lists_example2 =
+  let input = "[[1,2],{\"foo\":[3,4]},[5,6]]"
+  let JSE = parse_JSON input in
+  print_JSON (sum_all_lists JSE)
