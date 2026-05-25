@@ -193,122 +193,122 @@ def print_JSON (r:i64, js:[]JSON, keys:[](i64, i64), strheap: []u8) : []u8 =
 -- output { "{}" }
 -- input { "[1]" }
 -- output { "[1]" }
--- input { "[1, 2]" }
--- output { "[1, 2]" }
--- input { "{\"foo\": 1}" }
--- output { "{\"foo\": 1}" }
--- input { "{\"foo\": 1, \"bar\": 2}" }
--- output { "{\"foo\": 1, \"bar\": 2}" }
+-- input { "[1,2]" }
+-- output { "[1,2]" }
+-- input { "{\"foo\":1}" }
+-- output { "{\"foo\":1}" }
+-- input { "{\"foo\":1,\"bar\":2}" }
+-- output { "{\"foo\":1,\"bar\":2}" }
 -- input { "[[]]" }
 -- output { "[[]]" }
 -- input { "[[1]]" }
 -- output { "[[1]]" }
 -- input { "[{}]" }
 -- output { "[{}]" }
--- input { "[{\"foo\": 1}]" }
--- output { "[{\"foo\": 1}]" }
--- input { "[1, []]" }
--- output { "[1, []]" }
--- input { "[1, [2]]" }
--- output { "[1, [2]]" }
--- input { "[[], 1]" }
--- output { "[[], 1]" }
--- input { "[[1], 2]" }
--- output { "[[1], 2]" }
--- input { "[1, {}]" }
--- output { "[1, {}]" }
--- input { "[1, {\"foo\": 2}]" }
--- output { "[1, {\"foo\": 2}]" }
--- input { "[{}, 1]" }
--- output { "[{}, 1]" }
--- input { "[{\"foo\": 1}, 2]" }
--- output { "[{\"foo\": 1}, 2]" }
--- input { "[[], []]" }
--- output { "[[], []]" }
--- input { "[[1], []]" }
--- output { "[[1], []]" }
--- input { "[[], [1]]" }
--- output { "[[], [1]]" }
--- input { "[[1], [2]]" }
--- output { "[[1], [2]]" }
--- input { "[[], {}]" }
--- output { "[[], {}]" }
--- input { "[[1], {}]" }
--- output { "[[1], {}]" }
--- input { "[[], {\"foo\": 1}]" }
--- output { "[[], {\"foo\": 1}]" }
--- input { "[[1], {\"foo\": 2}]" }
--- output { "[[1], {\"foo\": 2}]" }
--- input { "[{}, []]" }
--- output { "[{}, []]" }
--- input { "[{\"foo\": 1}, []]" }
--- output { "[{\"foo\": 1}, []]" }
--- input { "[{}, [1]]" }
--- output { "[{}, [1]]" }
--- input { "[{\"foo\": 1}, [2]]" }
--- output { "[{\"foo\": 1}, [2]]" }
--- input { "[{}, {}]" }
--- output { "[{}, {}]" }
--- input { "[{\"foo\": 1}, {}]" }
--- output { "[{\"foo\": 1}, {}]" }
--- input { "[{}, {\"foo\": 1}]" }
--- output { "[{}, {\"foo\": 1}]" }
--- input { "[{\"foo\": 1}, {\"bar\": 2}]" }
--- output { "[{\"foo\": 1}, {\"bar\": 2}]" }
--- input { "{\"foo\": []}" }
--- output { "{\"foo\": []}" }
--- input { "{\"foo\": [1]}" }
--- output { "{\"foo\": [1]}" }
--- input { "{\"foo\": {\"bar\": 1}}" }
--- output { "{\"foo\": {\"bar\": 1}}" }
--- input { "{\"foo\": 1, \"bar\": []}" }
--- output { "{\"foo\": 1, \"bar\": []}" }
--- input { "{\"foo\": 1, \"bar\": [2]}" }
--- output { "{\"foo\": 1, \"bar\": [2]}" }
--- input { "{\"foo\": [], \"bar\": 1}" }
--- output { "{\"foo\": [], \"bar\": 1}" }
--- input { "{\"foo\": [1], \"bar\": 2}" }
--- output { "{\"foo\": [1], \"bar\": 2}" }
--- input { "{\"foo\": 1, \"bar\": {}}" }
--- output { "{\"foo\": 1, \"bar\": {}}" }
--- input { "{\"foo\": 1, \"bar\": {\"baz\": 2}}" }
--- output { "{\"foo\": 1, \"bar\": {\"baz\": 2}}" }
--- input { "{\"foo\": {}, \"bar\": 1}" }
--- output { "{\"foo\": {}, \"bar\": 1}" }
--- input { "{\"foo\": {\"baz\": 1}, \"bar\": 2}" }
--- output { "{\"foo\": {\"baz\": 1}, \"bar\": 2}" }
--- input { "{\"foo\": [], \"bar\": []}" }
--- output { "{\"foo\": [], \"bar\": []}" }
--- input { "{\"foo\": [], \"bar\": [1]}" }
--- output { "{\"foo\": [], \"bar\": [1]}" }
--- input { "{\"foo\": [1], \"bar\": []}" }
--- output { "{\"foo\": [1], \"bar\": []}" }
--- input { "{\"foo\": [1], \"bar\": [2]}" }
--- output { "{\"foo\": [1], \"bar\": [2]}" }
--- input { "{\"foo\": [], \"bar\": {}}" }
--- output { "{\"foo\": [], \"bar\": {}}" }
--- input { "{\"foo\": [], \"bar\": {\"baz\": 1}}" }
--- output { "{\"foo\": [], \"bar\": {\"baz\": 1}}" }
--- input { "{\"foo\": [1], \"bar\": {}}" }
--- output { "{\"foo\": [1], \"bar\": {}}" }
--- input { "{\"foo\": [1], \"bar\": {\"baz\": 2}}" }
--- output { "{\"foo\": [1], \"bar\": {\"baz\": 2}}" }
--- input { "{\"foo\": {}, \"bar\": []}" }
--- output { "{\"foo\": {}, \"bar\": []}" }
--- input { "{\"foo\": {\"baz\": 1}, \"bar\": []}" }
--- output { "{\"foo\": {\"baz\": 1}, \"bar\": []}" }
--- input { "{\"foo\": {}, \"bar\": [1]}" }
--- output { "{\"foo\": {}, \"bar\": [1]}" }
--- input { "{\"foo\": {\"baz\": 1}, \"bar\": [2]}" }
--- output { "{\"foo\": {\"baz\": 1}, \"bar\": [2]}" }
--- input { "{\"foo\": {}, \"bar\": {}}" }
--- output { "{\"foo\": {}, \"bar\": {}}" }
--- input { "{\"foo\": {}, \"bar\": {\"baz\": 1}}" }
--- output { "{\"foo\": {}, \"bar\": {\"baz\": 1}}" }
--- input { "{\"foo\": {\"baz\": 1}, \"bar\": {}}" }
--- output { "{\"foo\": {\"baz\": 1}, \"bar\": {}}" }
--- input { "{\"foo\": {\"baz\": 1}, \"bar\": {\"qux\": 2}}" }
--- output { "{\"foo\": {\"baz\": 1}, \"bar\": {\"qux\": 2}}" }
+-- input { "[{\"foo\":1}]" }
+-- output { "[{\"foo\":1}]" }
+-- input { "[1,[]]" }
+-- output { "[1,[]]" }
+-- input { "[1,[2]]" }
+-- output { "[1,[2]]" }
+-- input { "[[],1]" }
+-- output { "[[],1]" }
+-- input { "[[1],2]" }
+-- output { "[[1],2]" }
+-- input { "[1,{}]" }
+-- output { "[1,{}]" }
+-- input { "[1,{\"foo\":2}]" }
+-- output { "[1,{\"foo\":2}]" }
+-- input { "[{},1]" }
+-- output { "[{},1]" }
+-- input { "[{\"foo\":1},2]" }
+-- output { "[{\"foo\":1},2]" }
+-- input { "[[],[]]" }
+-- output { "[[],[]]" }
+-- input { "[[1],[]]" }
+-- output { "[[1],[]]" }
+-- input { "[[],[1]]" }
+-- output { "[[],[1]]" }
+-- input { "[[1],[2]]" }
+-- output { "[[1],[2]]" }
+-- input { "[[],{}]" }
+-- output { "[[],{}]" }
+-- input { "[[1],{}]" }
+-- output { "[[1],{}]" }
+-- input { "[[],{\"foo\":1}]" }
+-- output { "[[],{\"foo\":1}]" }
+-- input { "[[1],{\"foo\":2}]" }
+-- output { "[[1],{\"foo\":2}]" }
+-- input { "[{},[]]" }
+-- output { "[{},[]]" }
+-- input { "[{\"foo\":1},[]]" }
+-- output { "[{\"foo\":1},[]]" }
+-- input { "[{},[1]]" }
+-- output { "[{},[1]]" }
+-- input { "[{\"foo\":1},[2]]" }
+-- output { "[{\"foo\":1},[2]]" }
+-- input { "[{},{}]" }
+-- output { "[{},{}]" }
+-- input { "[{\"foo\":1},{}]" }
+-- output { "[{\"foo\":1},{}]" }
+-- input { "[{},{\"foo\":1}]" }
+-- output { "[{},{\"foo\":1}]" }
+-- input { "[{\"foo\":1},{\"bar\":2}]" }
+-- output { "[{\"foo\":1},{\"bar\":2}]" }
+-- input { "{\"foo\":[]}" }
+-- output { "{\"foo\":[]}" }
+-- input { "{\"foo\":[1]}" }
+-- output { "{\"foo\":[1]}" }
+-- input { "{\"foo\":{\"bar\":1}}" }
+-- output { "{\"foo\":{\"bar\":1}}" }
+-- input { "{\"foo\":1,\"bar\":[]}" }
+-- output { "{\"foo\":1,\"bar\":[]}" }
+-- input { "{\"foo\":1,\"bar\":[2]}" }
+-- output { "{\"foo\":1,\"bar\":[2]}" }
+-- input { "{\"foo\":[],\"bar\":1}" }
+-- output { "{\"foo\":[],\"bar\":1}" }
+-- input { "{\"foo\":[1],\"bar\":2}" }
+-- output { "{\"foo\":[1],\"bar\":2}" }
+-- input { "{\"foo\":1,\"bar\":{}}" }
+-- output { "{\"foo\":1,\"bar\":{}}" }
+-- input { "{\"foo\":1,\"bar\":{\"baz\":2}}" }
+-- output { "{\"foo\":1,\"bar\":{\"baz\":2}}" }
+-- input { "{\"foo\":{},\"bar\":1}" }
+-- output { "{\"foo\":{},\"bar\":1}" }
+-- input { "{\"foo\":{\"baz\":1},\"bar\":2}" }
+-- output { "{\"foo\":{\"baz\":1},\"bar\":2}" }
+-- input { "{\"foo\":[],\"bar\":[]}" }
+-- output { "{\"foo\":[],\"bar\":[]}" }
+-- input { "{\"foo\":[],\"bar\":[1]}" }
+-- output { "{\"foo\":[],\"bar\":[1]}" }
+-- input { "{\"foo\":[1],\"bar\":[]}" }
+-- output { "{\"foo\":[1],\"bar\":[]}" }
+-- input { "{\"foo\":[1],\"bar\":[2]}" }
+-- output { "{\"foo\":[1],\"bar\":[2]}" }
+-- input { "{\"foo\":[],\"bar\":{}}" }
+-- output { "{\"foo\":[],\"bar\":{}}" }
+-- input { "{\"foo\":[],\"bar\":{\"baz\":1}}" }
+-- output { "{\"foo\":[],\"bar\":{\"baz\":1}}" }
+-- input { "{\"foo\":[1],\"bar\":{}}" }
+-- output { "{\"foo\":[1],\"bar\":{}}" }
+-- input { "{\"foo\":[1],\"bar\":{\"baz\":2}}" }
+-- output { "{\"foo\":[1],\"bar\":{\"baz\":2}}" }
+-- input { "{\"foo\":{},\"bar\":[]}" }
+-- output { "{\"foo\":{},\"bar\":[]}" }
+-- input { "{\"foo\":{\"baz\":1},\"bar\":[]}" }
+-- output { "{\"foo\":{\"baz\":1},\"bar\":[]}" }
+-- input { "{\"foo\":{},\"bar\":[1]}" }
+-- output { "{\"foo\":{},\"bar\":[1]}" }
+-- input { "{\"foo\":{\"baz\":1},\"bar\":[2]}" }
+-- output { "{\"foo\":{\"baz\":1},\"bar\":[2]}" }
+-- input { "{\"foo\":{},\"bar\":{}}" }
+-- output { "{\"foo\":{},\"bar\":{}}" }
+-- input { "{\"foo\":{},\"bar\":{\"baz\":1}}" }
+-- output { "{\"foo\":{},\"bar\":{\"baz\":1}}" }
+-- input { "{\"foo\":{\"baz\":1},\"bar\":{}}" }
+-- output { "{\"foo\":{\"baz\":1},\"bar\":{}}" }
+-- input { "{\"foo\":{\"baz\":1},\"bar\":{\"qux\":2}}" }
+-- output { "{\"foo\":{\"baz\":1},\"bar\":{\"qux\":2}}" }
 
 entry test_print (source: []u8) =
   let JSE = parse_JSON source
