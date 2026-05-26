@@ -185,7 +185,7 @@ def sort_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
       case #list (a, b) ->
         let get_radix_key (x:i64) : i64 =
           if x < a 
-          then 0
+          then i64.lowest
           else 
             if x >= b
             then i64.highest
@@ -197,7 +197,7 @@ def sort_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
                 match j'[value]
                 case #num n -> n
                 case _ -> i64.highest
-        let sorted_indices = radix_sort_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
+        let sorted_indices = radix_sort_float_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
         let sorted_JSON = scatter (copy j) sorted_indices j in
         (r, sorted_JSON, k, s)
       case _ -> (-1, [], [], [])
