@@ -16,6 +16,7 @@ module type json = {
   val get_unique_by_key [n] : json_env -> [n]u8 -> json_arr_env
   val group_by_key [n] : json_env -> [n]u8 -> json_env
   val get_max_by_key [n] : json_env -> [n]u8 -> json_env
+  val get_ith_json_env : json_arr_env -> i64 -> json_env
 }
 
 module json : json = {
@@ -32,4 +33,9 @@ module json : json = {
   def get_unique_by_key [n] (JSE:json_env) (key:[n]u8) = unique_by_key_val JSE key
   def group_by_key [n] (JSE:json_env) (key:[n]u8) = group_by_key_val JSE key
   def get_max_by_key [n] (JSE:json_env) (key:[n]u8) = max_by_key_val JSE key
+  def get_ith_json_env (JSEarr:json_arr_env) (idx:i64) = 
+    let (rs, j, k, s) = JSEarr in
+    if idx >= length rs 
+    then (-1, [], [], [])
+    else (rs[idx], j, k, s)
 }
