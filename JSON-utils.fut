@@ -23,13 +23,13 @@ def print_JSON (r:i64, js:[]JSON, keys:[](i64, i64), strheap: []u8) : []u8 =
     case #json (#bool _) -> 1
     case #json (#string (_, _)) -> 1
     case #json (#list (a, b)) ->
-      let n = b - a
-      in if n == 0
+      let n = b - a in 
+      if n == 0
         then 2
         else ((n * 2) - 1) + 2
     case #json (#obj (a, b) (_, _)) ->
-      let n = b - a
-      in if n == 0
+      let n = b - a in 
+      if n == 0
         then 2
         else ((n * 4) - 1) + 2
   let get (j: pJSON) (i: i64): pJSON =
@@ -45,8 +45,8 @@ def print_JSON (r:i64, js:[]JSON, keys:[](i64, i64), strheap: []u8) : []u8 =
     case #json (#bool _) -> j
     case #json (#string (_, _)) -> j
     case #json (#list (a, b)) ->
-      let n = b - a
-      in if n == 0
+      let n = b - a in 
+      if n == 0
         then 
           match i
           case 0 -> #lbracket
@@ -104,8 +104,8 @@ def print_JSON (r:i64, js:[]JSON, keys:[](i64, i64), strheap: []u8) : []u8 =
     in 
       loop (acc, flag) = ([pJ[r]], 1) while flag > 0 do
         let a = expand sz get acc
-        let f = reduce_comm (+) 0 (map is_nonleaf a)
-        in (a, f)
+        let f = reduce_comm (+) 0 (map is_nonleaf a) in 
+          (a, f)
   let sz_str (j: pJSON): i64 =
     match j
     case #lbracket -> 1
@@ -139,8 +139,8 @@ def print_JSON (r:i64, js:[]JSON, keys:[](i64, i64), strheap: []u8) : []u8 =
       case 1 -> 'u'
       case _ -> 'l')
     case #json (#num n) ->
-      let len_n = i64.f64 (f64.floor (f64.log10 (f64.i64 (i64.abs n)))) + 1
-      in if n >= 0
+      let len_n = i64.f64 (f64.floor (f64.log10 (f64.i64 (i64.abs n)))) + 1 in 
+      if n >= 0
         then (u8.i64 (n / (10 ** (len_n - i - 1)) % 10)) + '0'
         else
           if i == 0
