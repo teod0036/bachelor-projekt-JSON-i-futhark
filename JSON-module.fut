@@ -35,7 +35,7 @@ module json : json = {
   def get_max_by_key [n] (JSE:env) (key:[n]u8) = max_by_key_val JSE key
   def get_ith_env (JSEarr:arr_env) (idx:i64) = 
     let (rs, j, k, s) = JSEarr in
-    if idx >= length rs 
+    if idx >= length rs || idx < 0
     then (-1, [], [], [])
     else (rs[idx], j, k, s)
 }
