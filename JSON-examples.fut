@@ -90,7 +90,7 @@ def get_keys_example =
   print_JSON (get_keys JSE)
 
 
---The root needs to point to an object or a list, otherwise an invalid environment is returned
+--The root needs to point to a list, otherwise an invalid environment is returned
 def map_has_key (JSE:JSON_environment) (key:[]u8) : JSON_environment =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
   if r == -1 
@@ -109,27 +109,12 @@ def map_has_key (JSE:JSON_environment) (key:[]u8) : JSON_environment =
           let bool_arr = map has_key relevant_objects
           let JSON_bools = concat [#list (1, b-a+1)] (map bool_to_JSONbool bool_arr) in
           (0, JSON_bools, [], [])
-      case #obj (_, _) (a, b) ->
-        if a == -1 
-        then (0, [#list (-1, -1)], [], []) 
-        else
-          let relevant_objects = a..<b  
-          let bool_arr = map has_key relevant_objects
-          let JSON_bools = concat [#list (1, b-a+1)] (map bool_to_JSONbool bool_arr) in
-          (0, JSON_bools, [], [])
       case _ -> (-1, [], [], [])
 
 --Based on first example from https://jqlang.org/manual/#has
 --Expected output: "[true,false]"
 def map_has_foo_example1 =
   let input = "[{\"foo\": 42}, {}]"
-  let key = "foo"
-  let JSE = parse_JSON input in
-  print_JSON (map_has_key JSE key)
-
---Expected output: "[true,false]"
-def map_has_foo_example2 =
-  let input = "{\"bar\":{\"foo\": 42}, \"baz\":{}}"
   let key = "foo"
   let JSE = parse_JSON input in
   print_JSON (map_has_key JSE key)
@@ -142,24 +127,24 @@ def map_has_foo_example2 =
 def select_key_val_is_string (JSE:JSON_environment) (key:[]u8) (value:[]u8) : ([]i64, []JSON, []str, []u8) =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
   if r == -1 
-    then ([-1], [], [], [])
-    else
-      match j[r]
-      case #list (a, b) ->
-        let relevant_objects = a..<b
-        let key_val_is_string (o:i64) : i64 =
-          let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
-          match j'[r']
-          case #string (a', b') ->
-            let slice = s[a':b'] in
-            if str_equal value slice
-            then o
-            else -1
-          case _ -> -1
-        let is_bad (x:i64) = x != -1
-        let roots = filter is_bad (map key_val_is_string relevant_objects) in
-        (roots, j, k, s)
-      case _ -> ([-1], [], [], [])
+  then ([-1], [], [], [])
+  else
+    match j[r]
+    case #list (a, b) ->
+      let relevant_objects = a..<b
+      let key_val_is_string (o:i64) : i64 =
+        let (r', j', _, _) = (get_by_key (o, j, k, s) key) in
+        match j'[r']
+        case #string (a', b') ->
+          let slice = s[a':b'] in
+          if str_equal value slice
+          then o
+          else -1
+        case _ -> -1
+      let is_bad (x:i64) = x != -1
+      let roots = filter is_bad (map key_val_is_string relevant_objects) in
+      (roots, j, k, s)
+    case _ -> ([-1], [], [], [])
 
 --Based on second example from https://jqlang.org/manual/#select
 --Expected output: "{\"id\":\"second\",\"val\":2}"
@@ -179,28 +164,28 @@ def select_id_is_second_example =
 def sort_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
   if r == -1 
-    then (-1, [], [], [])
-    else
-      match j[r] 
-      case #list (a, b) ->
-        let get_radix_key (x:i64) : i64 =
-          if x < a 
-          then i64.lowest
+  then (-1, [], [], [])
+  else
+    match j[r] 
+    case #list (a, b) ->
+      let get_radix_key (x:i64) : i64 =
+        if x < a 
+        then i64.lowest
+        else 
+          if x >= b
+          then i64.highest
           else 
-            if x >= b
+            let (value, j', _, _) = get_by_key (x, j, k, s) key in
+            if value == -1
             then i64.highest
             else 
-              let (value, j', _, _) = get_by_key (x, j, k, s) key in
-              if value == -1
-              then i64.highest
-              else 
-                match j'[value]
-                case #num n -> n
-                case _ -> i64.highest
-        let sorted_indices = radix_sort_float_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
-        let sorted_JSON = scatter (copy j) sorted_indices j in
-        (r, sorted_JSON, k, s)
-      case _ -> (-1, [], [], [])
+              match j'[value]
+              case #num n -> n
+              case _ -> i64.highest
+      let sorted_indices = radix_sort_float_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
+      let sorted_JSON = scatter (copy j) sorted_indices j in
+      (r, sorted_JSON, k, s)
+    case _ -> (-1, [], [], [])
 
 --Based on second example from https://jqlang.org/manual/v1.8/#sort-sort_by
 --Expected output: "[{\"foo\":2,\"bar\":1},{\"foo\":3,\"bar\":10},{\"foo\":4,\"bar\":10}]"
@@ -278,30 +263,30 @@ def group_by_foo_example =
 def max_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
   if r == -1 
-    then (-1, [], [], [])
-    else
-      match j[r] 
-      case #list (a, b) ->
-        let max_obj_idx (x:i64) (y:i64) : i64 =
-          if x == -1 
-          then y
-          else 
-            if y == -1
-            then x
-            else
-              let (xr, _, _, _) = get_by_key (x, j, k, s) key
-              let (yr, _, _, _) = get_by_key (y, j, k, s) key in
-              match (j[xr], j[yr])
-              case (#num a, #num b) -> if a > b then x else y
-              case (#num _, _) -> x
-              case (_, #num _) -> y
-              case _ -> -1
-        let relevant_objects = a..<b
-        let max_obj_idx = reduce max_obj_idx (-1) (relevant_objects) in
-        if  max_obj_idx == -1 
-        then (-1, [], [], [])
-        else (max_obj_idx, j, k, s)   
-      case _ -> (-1, [], [], [])
+  then (-1, [], [], [])
+  else
+    match j[r] 
+    case #list (a, b) ->
+      let max_obj_idx (x:i64) (y:i64) : i64 =
+        if x == -1 
+        then y
+        else 
+          if y == -1
+          then x
+          else
+            let (xr, _, _, _) = get_by_key (x, j, k, s) key
+            let (yr, _, _, _) = get_by_key (y, j, k, s) key in
+            match (j[xr], j[yr])
+            case (#num a, #num b) -> if a > b then x else y
+            case (#num _, _) -> x
+            case (_, #num _) -> y
+            case _ -> -1
+      let relevant_objects = a..<b
+      let max_obj_idx = reduce max_obj_idx (-1) (relevant_objects) in
+      if  max_obj_idx == -1 
+      then (-1, [], [], [])
+      else (max_obj_idx, j, k, s)   
+    case _ -> (-1, [], [], [])
 
 --Based on example from https://jqlang.org/manual/v1.8/#min-max-min_by-max_by
 --Expected output: "{\"foo\":2,\"bar\":3}"
