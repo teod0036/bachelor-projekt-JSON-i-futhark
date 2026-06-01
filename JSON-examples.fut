@@ -43,7 +43,7 @@ def get_foo_example =
   print_JSON (get_by_key JSE foo)
 
 --The root needs to point to a list otherwise an invalid environment is returned
---If index is out of bounds, a new environment containing null is returned
+--If index is out of bounds, an invalid environment is returned
 def get_by_index (JSE:JSON_environment) (idx:i64) : JSON_environment =
   let (r:i64, j:[]JSON, k:[](i64, i64), s:[]u8) = JSE in 
   if r == -1 
@@ -51,9 +51,9 @@ def get_by_index (JSE:JSON_environment) (idx:i64) : JSON_environment =
   else
     match j[r]
     case #list (a, b) -> 
-      if idx < b
+      if idx < b - a && idx >= 0
       then (a+idx, j, k, s)
-      else (0, [#null], [], [])
+      else (-1, [], [], [])
     case _ -> (-1, [], [], [])
 
 --Based on first example from https://jqlang.org/manual/#array-index
@@ -98,7 +98,7 @@ def map_has_key (JSE:JSON_environment) (key:[]u8) : JSON_environment =
   else
     let has_key (o:i64) : bool =
       let temp = (get_by_key (o, j, k, s) key) in
-      temp.0 != -1 && temp.1[0] != #null
+      temp.0 != -1
     let bool_to_JSONbool (x:bool) = #bool x in
     match j[r]
       case #list (a, b) ->
