@@ -182,7 +182,7 @@ def sort_by_key_val (JSE:JSON_environment) (key:[]u8) : JSON_environment =
               match j'[value]
               case #num n -> n
               case _ -> i64.highest
-      let sorted_indices = radix_sort_float_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
+      let sorted_indices = radix_sort_int_by_key get_radix_key i64.num_bits i64.get_bit (indices j)
       let sorted_JSON = scatter (copy j) sorted_indices j in
       (r, sorted_JSON, k, s)
     case _ -> (-1, [], [], [])
