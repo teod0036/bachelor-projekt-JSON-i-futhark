@@ -7,6 +7,8 @@ module type json = {
   type~ arr_env
   val mk [n] : [n]u8 -> env
   val print : env -> []u8
+  val unpack : env -> JSON_environment
+  val repack [n] [m] [o] : (root, [n]JSON, [m]str, [o]u8) -> env
   val get_key [n] : env -> [n]u8 -> env
   val get_index : env -> i64 -> env
   val get_obj_keys : env -> env
@@ -24,6 +26,8 @@ module json : json = {
   type~ arr_env = ([]root, []JSON, []str, []u8)
   def mk [n] (s:[n]u8) = parse_JSON s
   def print (JSE:env) = print_JSON JSE
+  def unpack (JSE:env) : JSON_environment = JSE
+  def repack (JSE:JSON_environment) : env = JSE
   def get_key [n] (JSE:env) (key:[n]u8) = get_by_key JSE key
   def get_index (JSE:env) (idx:i64) = get_by_index JSE idx
   def get_obj_keys (JSE:env) = get_keys JSE
